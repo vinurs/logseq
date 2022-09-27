@@ -179,12 +179,15 @@
                 (srs/update-cards-due-count!)
                 state)}
   [_state srs-open?]
-  (let [num (state/sub :srs/cards-due-count)]
+  (let [num (state/sub :srs/cards-due-count)
+        action #(do
+                  (srs/update-cards-due-count!)
+                  (state/pub-event! [:modal/show-cards]))]
     [:a.item.group.flex.items-center.px-2.py-2.text-sm.font-medium.rounded-md
      {:class (util/classnames [{:active srs-open?}])
-      :on-click #(do
-                   (srs/update-cards-due-count!)
-                   (state/pub-event! [:modal/show-cards]))}
+      :tabIndex "0"
+      :on-click action
+      :on-key-up #(when (contains? #{13 32} (.-keyCode %)) (action))}
      (ui/icon "infinity")
      [:span.flex-1 (t :right-side-bar/flashcards)]
      (when (and num (not (zero? num)))
@@ -296,13 +299,16 @@
 
       [:footer.px-2 {:class "new-page"}
        (when-not config/publishing?
-         [:a.item.group.flex.items-center.px-2.py-2.text-sm.font-medium.rounded-md.new-page-link
-          {:on-click (fn []
-                       (and (util/sm-breakpoint?)
-                            (state/toggle-left-sidebar!))
-                       (state/pub-event! [:go/search]))}
-          (ui/icon "circle-plus" {:style {:font-size 20}})
-          [:span.flex-1 (t :right-side-bar/new-page)]])]]]))
+         (let [action (fn []
+                        (and (util/sm-breakpoint?)
+                             (state/toggle-left-sidebar!))
+                        (state/pub-event! [:go/search]))]
+           [:a.item.group.flex.items-center.px-2.py-2.text-sm.font-medium.rounded-md.new-page-link
+            {:tabIndex "0"
+             :on-key-up #(when (= 13 (.-keyCode %)) (action))
+             :on-click action}
+            (ui/icon "circle-plus" {:style {:font-size 20}})
+            [:span.flex-1 (t :right-side-bar/new-page)]]))]]]))
 
 (rum/defc left-sidebar < rum/reactive
   [{:keys [left-sidebar-open? route-match]}]
